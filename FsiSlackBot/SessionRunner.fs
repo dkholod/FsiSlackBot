@@ -102,7 +102,7 @@ module SessionRunner =
             sprintf "@%s Coffee is bad for you [evaluation failed]."
         |]
 
-        if (expression |> contains "coffee") then cofeeTemplates.[rng.Next(templates.Length)]
+        if (expression |> contains "coffee") then cofeeTemplates.[rng.Next(cofeeTemplates.Length)]
         else templates.[rng.Next(templates.Length)]
 
     let composeResponse (user: string) (result:AnalysisResult) =
