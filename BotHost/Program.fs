@@ -1,11 +1,12 @@
 ﻿open System.Threading
-open FsiSlackBot
+
+open BotHost
 
 [<EntryPoint>]
 let main argv = 
    printfn "Starting Bot. Ctrl+C to exit."
    
-   SlackBot.initBot() |> ignore
+   BotBootstrap.initBot() |> ignore
    Thread.Sleep Timeout.Infinite
 
    0

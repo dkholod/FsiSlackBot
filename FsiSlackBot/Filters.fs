@@ -8,7 +8,7 @@ type AnalysisResult =
     | HelpRequest
     | UnsafeCode
     | EvaluationTimeout
-    | EvaluationFailure
+    | EvaluationFailure of string
     | EvaluationSuccess of string
 
 module Filters =

@@ -17,4 +17,6 @@ module AzureTableLog =
         Guid.NewGuid().ToString()
 
     let write team user question answer = 
-        logsTable.Insert(team |> Partition, stringGuid() |> Row, { User = user; Question = question; Answer = answer }) |> ignore
+       try
+            logsTable.Insert(team |> Partition, stringGuid() |> Row, { User = user; Question = question; Answer = answer }) |> ignore
+       with | _ -> ()

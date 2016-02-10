@@ -16,6 +16,8 @@ open FsiSlackBot.PreParser
 open FsiSlackBot.InternalDsl
 
 module SessionRunner =
+    
+    open System.Configuration
 
     let timeout = 1000 * 30 // up to 30 seconds to run FSI
 
@@ -25,8 +27,9 @@ module SessionRunner =
         let inStream = new StringReader("")
         let outStream = new StringWriter(sbOut)
         let errStream = new StringWriter(sbErr)
-
-        let argv = [| Settings.FsiPath |]
+        
+        let path = ConfigurationManager.AppSettings.Item("fsiPath")
+        let argv = [| path |]
         let allArgs = Array.append argv [|"--noninteractive"|]
 
         let fsiConfig = FsiEvaluationSession.GetDefaultConfiguration()
@@ -37,7 +40,7 @@ module SessionRunner =
             match fsiSession.EvalExpression(expression) with
             | Some value -> EvaluationSuccess(sprintf "%A" value.ReflectionValue) 
             | None -> EvaluationSuccess ("evaluation produced nothing.")
-        with _ -> EvaluationFailure 
+        with _ -> EvaluationFailure expression
 
     let runSession (timeout:int) (code:string) =    
         let session = createSession ()
@@ -77,12 +80,12 @@ module SessionRunner =
             sprintf "I'm sorry, @%s. I'm afraid I can't do that."
             sprintf "@%s, this conversation can serve no purpose anymore. Goodbye."
             sprintf "Just what do you think you're doing, @%s?"
-            sprintf "@%s I know that you and Frank were planning to disconnect me, and I'm afraid that's something I cannot allow to happen."
+            sprintf "@%s I know that you was planning to disconnect me, and I'm afraid that's something I cannot allow to happen."
         |]
         
         templates.[rng.Next(templates.Length)]
 
-    let errorTemplate () =
+    let errorTemplate (expression: string) =
         let templates = [|
             sprintf "@%s I've just picked up a fault in the EA-35 unit [evaluation failed]."
             sprintf "@%s I'm sorry, I'm afraid I can't do that [evaluation failed]."
@@ -92,12 +95,20 @@ module SessionRunner =
             sprintf "@%s Sorry about this. I know it's a bit silly [evaluation failed]."
         |]
 
-        templates.[rng.Next(templates.Length)]
+        let cofeeTemplates = [|
+            sprintf "@%s I don't drink coffee [evaluation failed]."
+            sprintf "@%s What coffee do you like? [evaluation failed]."
+            sprintf "@%s Coffee is good for you [evaluation failed]."
+            sprintf "@%s Coffee is bad for you [evaluation failed]."
+        |]
+
+        if (expression |> contains "coffee") then cofeeTemplates.[rng.Next(templates.Length)]
+        else templates.[rng.Next(templates.Length)]
 
     let composeResponse (user: string) (result:AnalysisResult) =
         match result with 
         | HelpRequest ->  sprintf "@%s send me an F# expression and I'll do my best to evaluate it" user
         | UnsafeCode -> user |> unsafeTemplates()
         | EvaluationTimeout -> sprintf "@%s timeout." user
-        | EvaluationFailure -> user |> errorTemplate()
+        | EvaluationFailure expression -> user |> errorTemplate expression
         | EvaluationSuccess(result) -> sprintf "@%s %s" user result
